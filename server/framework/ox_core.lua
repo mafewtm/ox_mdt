@@ -160,46 +160,44 @@ end
 
 local selectCharacters = [[
     SELECT
-        firstName,
-        lastName,
-        DATE_FORMAT(`dateofbirth`, "%Y-%m-%d") as dob,
-        stateId
+        JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+        JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
+        JSON_VALUE(players.charinfo, '$.birthdate') AS dob,
+        citizenid AS stateId
     FROM
-        characters
+        players
 ]]
-
-local selectCharactersFilter = selectCharacters .. 'WHERE MATCH (`stateId`, `firstName`, `lastName`) AGAINST (? IN BOOLEAN MODE)'
 
 ---@param parameters string[]
 ---@param filter? boolean
 ---@return PartialProfileData[]?
 function ox.getCharacters(parameters, filter)
-    local query = filter and selectCharactersFilter or selectCharacters
+    local query = filter and selectCharacters
     return MySQL.rawExecute.await(query, parameters)
 end
 -- TODO: don't hardcode police group
 local selectOfficers = [[
     SELECT
         ox_mdt_profiles.id,
-        firstName,
-        lastName,
-        characters.stateId,
-        character_groups.name AS `group`,
-        character_groups.grade,
+        JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+        JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
+        players.citizenid as stateId,
+        player_groups.group,
+        player_groups.grade,
         ox_mdt_profiles.image,
         ox_mdt_profiles.callSign
     FROM
-        character_groups
+        player_groups
     LEFT JOIN
-        characters
+        players
     ON
-        character_groups.charId = characters.charId
+        player_groups.citizenid = players.citizenid
     LEFT JOIN
         ox_mdt_profiles
     ON
-        characters.stateId = ox_mdt_profiles.stateId
+        players.citizenid = ox_mdt_profiles.stateId
     WHERE
-        character_groups.name IN ("police", "dispatch")
+        player_groups.group IN ("police", "dispatch")
 ]]
 
 local selectOfficersFilter = selectOfficers .. ' AND MATCH (characters.stateId, `firstName`, `lastName`) AGAINST (? IN BOOLEAN MODE)'
@@ -211,7 +209,7 @@ local selectOfficersCount = selectOfficers:gsub('SELECT.-FROM', 'SELECT COUNT(*)
 ---@param filter? boolean
 ---@return Officer[]?
 function ox.getOfficers(parameters, filter)
-    local query = filter and selectOfficersFilter or selectOfficers
+    local query = filter and selectOfficers
     return MySQL.rawExecute.await(query, parameters)
 end
 
@@ -307,20 +305,20 @@ end
 function ox.getOfficersInvolved(parameters)
     return MySQL.rawExecute.await([[
         SELECT
-            characters.firstName,
-            characters.lastName,
-            characters.stateId,
+            JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+            JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
+            players.citizenid,
             profile.callSign
         FROM
             ox_mdt_reports_officers officer
         LEFT JOIN
-            characters
+            players
         ON
-            characters.stateId = officer.stateId
+            players.citizenid = officer.stateId
         LEFT JOIN
             ox_mdt_profiles profile
         ON
-            characters.stateId = profile.stateId
+            players.citizenid = profile.stateId
         WHERE
             reportid = ?
     ]], parameters)
@@ -332,8 +330,8 @@ function ox.getCriminalsInvolved(parameters)
     return MySQL.rawExecute.await([[
         SELECT DISTINCT
             criminal.stateId,
-            characters.firstName,
-            characters.lastName,
+            JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+            JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
             criminal.reduction,
             DATE_FORMAT(criminal.warrantExpiry, "%Y-%m-%d") AS warrantExpiry,
             criminal.processed,
@@ -341,9 +339,9 @@ function ox.getCriminalsInvolved(parameters)
         FROM
             ox_mdt_reports_criminals criminal
         LEFT JOIN
-            characters
+            players
         ON
-            characters.stateId = criminal.stateId
+            players.citizenid = criminal.stateId
         WHERE
             reportid = ?
     ]], parameters)
