@@ -59,7 +59,7 @@ end
 
 ---@param citizenId string
 local function getVehicles(citizenId)
-    local vehicles = MySQL.rawExecute.await('SELECT `plate`, `vehicle` from `player_vehicles` WHERE `citizenid` = ?', citizenId) or {}
+    local vehicles = MySQL.rawExecute.await('SELECT `plate`, `vehicle` from `player_vehicles` WHERE `citizenid` = ?', { citizenId }) or {}
 
     for _, v in pairs(vehicles) do
         v.label = ('%s %s'):format(VEHICLES[v.vehicle].brand, VEHICLES[v.vehicle].name) or v.vehicle
@@ -91,7 +91,7 @@ createProfileCard({
         title = locale('vehicles'),
         icon = 'car',
         getData = function(profile)
-            local vehicles = getVehicles(profile.charid)
+            local vehicles = getVehicles(profile.stateId)
             local vehicleLabels = {}
 
             for i = 1, #vehicles do
