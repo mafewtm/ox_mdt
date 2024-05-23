@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS `ox_mdt_reports_charges` (
 CREATE TABLE IF NOT EXISTS `ox_mdt_reports_evidence` (
     `reportid` INT (10) UNSIGNED NOT NULL,
     `label` VARCHAR(50) NOT NULL DEFAULT '',
-    `image` VARCHAR(90) NOT NULL DEFAULT '',
+    `image` VARCHAR(300) NOT NULL DEFAULT '',
     INDEX `reportid` (`reportid`) USING BTREE,
     CONSTRAINT `FK__ox_mdt_reports` FOREIGN KEY (`reportid`) REFERENCES `ox_mdt_reports` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
 );
@@ -112,6 +112,6 @@ CREATE TABLE IF NOT EXISTS `ox_mdt_bolos` (
 
 CREATE TABLE IF NOT EXISTS `ox_mdt_bolos_images` (
     `boloId` INT UNSIGNED NOT NULL,
-    `image` VARCHAR(90) NULL,
+    `image` VARCHAR(300) NULL,
     CONSTRAINT `ox_mdt_bolos_images_ox_mdt_bolos_id_fk` FOREIGN KEY (`boloId`) REFERENCES `ox_mdt_bolos` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
 );
