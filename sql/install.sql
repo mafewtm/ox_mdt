@@ -33,7 +33,7 @@ CREATE TABLE
 CREATE TABLE
     `ox_mdt_reports_criminals` (
         `reportid` INT (10) UNSIGNED NOT NULL,
-        `stateid` VARCHAR(7) NOT NULL,
+        `stateid` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
         `reduction` TINYINT (3) UNSIGNED NULL DEFAULT NULL,
         `warrantExpiry` DATE NULL DEFAULT NULL,
         `processed` TINYINT (1) NULL DEFAULT NULL,
@@ -47,7 +47,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS `ox_mdt_reports_officers` (
         `reportid` int (10) unsigned NOT NULL,
-        `stateid` VARCHAR(7) NOT NULL,
+        `stateid` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
         KEY `FK_ox_mdt_reports_officers_characters` (`stateid`) USING BTREE,
         KEY `reportid` (`reportid`) USING BTREE,
         CONSTRAINT `FK_ox_mdt_reports_officers_characters` FOREIGN KEY (`stateid`) REFERENCES `players` (`citizenid`) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -57,7 +57,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS `ox_mdt_reports_charges` (
         `reportid` int (10) unsigned NOT NULL,
-        `stateid` VARCHAR(7) NOT NULL,
+        `stateid` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
         `charge` VARCHAR(100) DEFAULT NULL,
         `count` int (10) unsigned NOT NULL DEFAULT 1,
         `time` int (10) unsigned DEFAULT NULL,
@@ -82,7 +82,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS `ox_mdt_announcements` (
         `id` INT (11) UNSIGNED NOT NULL AUTO_INCREMENT,
-        `creator` VARCHAR(7) NOT NULL,
+        `creator` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
         `contents` TEXT NOT NULL,
         `createdAt` DATETIME NOT NULL DEFAULT curtime(),
         PRIMARY KEY (`id`) USING BTREE,
@@ -93,7 +93,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS `ox_mdt_warrants` (
         `reportid` INT UNSIGNED NOT NULL,
-        `stateid` VARCHAR(7) NOT NULL,
+        `stateid` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
         `expiresAt` DATETIME NOT NULL,
         CONSTRAINT `ox_mdt_warrants_characters_stateid_fk` FOREIGN KEY (`stateid`) REFERENCES `players` (`citizenid`) ON UPDATE CASCADE ON DELETE CASCADE,
         CONSTRAINT `ox_mdt_warrants_ox_mdt_reports_id_fk` FOREIGN KEY (`reportid`) REFERENCES `ox_mdt_reports` (`id`) ON UPDATE CASCADE ON DELETE CASCADE
@@ -102,7 +102,7 @@ CREATE TABLE
 CREATE TABLE
     IF NOT EXISTS `ox_mdt_profiles` (
     `id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    `stateid`  VARCHAR(7)  NOT NULL,
+    `stateid`  VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
     `image`    VARCHAR(90) NULL,
     `notes`    TEXT        NULL,
     `callsign` VARCHAR(10) NULL,
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS `ox_mdt_bolos`
 (
     `id`        INT UNSIGNED AUTO_INCREMENT
         PRIMARY KEY,
-    `creator`   VARCHAR(7)                 NOT NULL,
+    `creator`   VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
     `contents`  TEXT                       NULL,
     `createdAt` DATETIME DEFAULT curtime() NOT NULL,
     CONSTRAINT `ox_mdt_bolos_ox_mdt_profiles_stateid_fk`
