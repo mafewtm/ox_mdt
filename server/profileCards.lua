@@ -54,7 +54,7 @@ end
 local function getLicenses(citizenId)
     local player = exports.qbx_core:GetPlayerByCitizenId(citizenId) or exports.qbx_core:GetOfflinePlayer(citizenId)
 
-    return player.PlayerData.metadata.licenses or {}
+    return player.PlayerData.metadata.licences
 end
 
 ---@param citizenId string
@@ -74,11 +74,13 @@ createProfileCard({
         title = locale('licenses'),
         icon = 'certificate',
         getData = function(profile)
-            local licenses = getLicenses(profile.charid)
+            local licenses = getLicenses(profile.stateId)
             local licenseLabels = {}
 
-            for i = 1, #licenses do
-                licenseLabels[#licenseLabels+1] = licenses[i].label
+            for licenseType, hasLicense in pairs(licenses) do
+                if hasLicense then
+                    licenseLabels[#licenseLabels + 1] = qbx.string.capitalize(licenseType)
+                end
             end
 
             return licenseLabels

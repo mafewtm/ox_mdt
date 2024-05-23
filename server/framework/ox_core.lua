@@ -374,22 +374,21 @@ function ox.getCharacterProfile(parameters)
     ---@type Profile
     local profile = MySQL.rawExecute.await([[
         SELECT
-            a.firstName,
-            a.lastName,
-            a.stateId,
-            a.charid,
-            DATE_FORMAT(a.dateofbirth, "%Y-%m-%d") AS dob,
-            a.phoneNumber,
+            JSON_VALUE(a.charinfo, '$.firstname') AS firstName,
+            JSON_VALUE(a.charinfo, '$.lastname') AS lastName,
+            a.citizenid AS stateId,
+            JSON_VALUE(a.charinfo, '$.birthdate') AS dob,
+            a.phone_number AS phoneNumber,
             b.image,
             b.notes
         FROM
-            `characters` a
+            `players` a
         LEFT JOIN
             `ox_mdt_profiles` b
         ON
-            b.stateid = a.stateid
+            b.stateid = a.citizenid
         WHERE
-            a.stateId = ?
+            a.citizenid = ?
     ]], parameters)?[1]
 
     return profile
