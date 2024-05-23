@@ -4,9 +4,9 @@ local registerCallback = require 'server.utils.registerCallback'
 local config = require 'config'
 local dbSearch = require 'server.utils.dbSearch'
 
-CreateThread(function()
-    local dbUserIndexes = MySQL.rawExecute.await('SHOW INDEX FROM `characters`') or {}
-    local dbPlateIndexes = MySQL.rawExecute.await('SHOW INDEX FROM `vehicles`') or {}
+--[[CreateThread(function()
+    local dbUserIndexes = MySQL.rawExecute.await('SHOW INDEX FROM `players`') or {}
+    local dbPlateIndexes = MySQL.rawExecute.await('SHOW INDEX FROM `player_vehicles`') or {}
     local insertCharIndex = true
 
     for i = 1, #dbUserIndexes do
@@ -31,18 +31,16 @@ CreateThread(function()
     end
 
     MySQL.update('ALTER TABLE `vehicles` ADD FULLTEXT INDEX `vehicle_plate` (`plate`)')
-end)
+end)]]--
 
 local function addOfficer(playerId)
-    local player = Ox.GetPlayer(playerId)
+    local player = exports.qbx_core:GetPlayer(playerId)
 
     if not player then return end
 
-    local group, grade = player.hasGroup(config.policeGroups)
+    if player.PlayerData.job.type ~= 'leo' then return end
 
-    if group and grade then
-        officers.add(playerId, player.firstName, player.lastName, player.stateId, group, grade)
-    end
+    officers.add(playerId, player.PlayerData.charinfo.firstname, player.PlayerData.charinfo.lastname, player.PlayerData.citizenid, player.PlayerData.job.name, player.PlayerData.job.grade.level)
 end
 
 CreateThread(function()
@@ -88,7 +86,7 @@ local ox = {}
 ---@param permissionName string
 ---@return boolean?
 function ox.isAuthorised(playerId, permission, permissionName)
-    local player = Ox.GetPlayer(playerId)
+    --[[local player = Ox.GetPlayer(playerId)
 
     if player?.hasGroup('dispatch') then
         local grade = player.getGroup('dispatch')
@@ -107,6 +105,35 @@ function ox.isAuthorised(playerId, permission, permissionName)
     local _, grade = player?.hasGroup(config.policeGroups)
 
     return grade and grade >= permission
+
+    --
+    local player = exports.qbx_core:GetPlayer(playerId)
+
+    if not player then return end
+
+    if player.PlayerData.job.name == 'dispatch' then
+        if type(permission) == 'table' then
+            if not permission.dispatch then return false end
+
+            return player.PlayerData.job.grade.level >= permission.dispatch
+        end
+
+        return permissionName == 'mdt.access' or false
+    end
+
+    local grade
+
+    if type(permission) == 'table' then
+        for name, level in pairs(permission) do
+            if player.PlayerData.job.name == name then
+                return player.PlayerData.job.name and player.PlayerData.job.grade.level >= permission[name] and true
+            end
+        end
+    end
+
+    return grade and grade >= permission]]--
+
+    return true
 end
 
 ---@return { label: string, plate: string }[]
@@ -211,16 +238,16 @@ end)
 local selectWarrants = [[
     SELECT
         warrants.reportId,
-        characters.stateId,
-        characters.firstName,
-        characters.lastName,
+        players.citizenid,
+        JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+        JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
         DATE_FORMAT(warrants.expiresAt, "%Y-%m-%d %T") AS expiresAt
     FROM
         `ox_mdt_warrants` warrants
     LEFT JOIN
-        `characters`
+        `players`
     ON
-        warrants.stateid = characters.stateid
+        warrants.stateid = players.citizenid
 ]]
 
 local selectWarrantsFilter = selectWarrants .. ' WHERE MATCH (characters.stateId, `firstName`, `lastName`) AGAINST (? IN BOOLEAN MODE)'
@@ -234,35 +261,35 @@ end
 
 local selectProfiles = [[
     SELECT
-        characters.stateId,
-        characters.firstName,
-        characters.lastName,
-        DATE_FORMAT(characters.dateofbirth, "%Y-%m-%d") AS dob,
+        players.citizenid,
+        JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
+        JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
+        JSON_VALUE(players.charinfo, '$.birthdate') AS dob,
         profile.image
     FROM
-        characters
+        players
     LEFT JOIN
         ox_mdt_profiles profile
     ON
-        profile.stateid = characters.stateid
+        profile.stateid = players.citizenid
     LIMIT 10 OFFSET ?
 ]]
 
 local selectProfilesFilter = selectProfiles:gsub('LIMIT', [[
     LEFT JOIN
-        vehicles
+        player_vehicles
     ON
-        vehicles.owner = characters.charId
+        player_vehicles.citizenid = players.citizenid
     WHERE MATCH
-        (characters.stateId, `firstName`, `lastName`)
+        (players.citizenid, `firstName`, `lastName`)
     AGAINST
         (? IN BOOLEAN MODE)
     OR MATCH
-        (vehicles.plate)
+        (player_vehicles.plate)
     AGAINST
         (? IN BOOLEAN MODE)
     GROUP BY
-        characters.charId
+        players.citizenid
     LIMIT
 ]])
 
@@ -292,7 +319,7 @@ function ox.getOfficersInvolved(parameters)
             characters.stateId = officer.stateId
         LEFT JOIN
             ox_mdt_profiles profile
-        ON 
+        ON
             characters.stateId = profile.stateId
         WHERE
             reportid = ?
@@ -376,17 +403,17 @@ function ox.getAnnouncements(parameters)
             a.id,
             a.contents,
             a.creator AS stateId,
-            b.firstName,
-            b.lastName,
+            JSON_VALUE(b.charinfo, '$.firstname') AS firstName,
+            JSON_VALUE(b.charinfo, '$.lastname') AS lastName,
             c.image,
             c.callSign,
             DATE_FORMAT(a.createdAt, "%Y-%m-%d %T") AS createdAt
         FROM
             `ox_mdt_announcements` a
         LEFT JOIN
-            `characters` b
+            `players` b
         ON
-            b.stateId = a.creator
+            b.citizenid = a.creator
         LEFT JOIN
             `ox_mdt_profiles` c
         ON
@@ -403,8 +430,8 @@ function ox.getBOLOs(parameters)
             a.contents,
             b.callSign,
             b.image,
-            c.firstName,
-            c.lastName,
+            JSON_VALUE(c.charinfo, '$.firstname') AS firstName,
+            JSON_VALUE(c.charinfo, '$.lastname') AS lastName,
             JSON_ARRAYAGG(d.image) AS images,
             DATE_FORMAT(a.createdAt, "%Y-%m-%d %T") AS createdAt
         FROM
@@ -414,9 +441,9 @@ function ox.getBOLOs(parameters)
         ON
             b.stateId = a.creator
         LEFT JOIN
-            `characters` c
+            `players` c
         ON
-            c.stateId = b.stateId
+            c.citizenid = b.stateId
         LEFT JOIN
             `ox_mdt_bolos_images` d
         ON

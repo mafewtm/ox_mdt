@@ -4,7 +4,7 @@ local hasLoadedUi = false
 local isMdtOpen = false
 local config = require 'config'
 local framework = require(('client.framework.%s'):format(config.framework))
-local player = framework.getOfficerData()
+local JOBS = exports.qbx_core:GetJobs()
 
 local function getOfficersWithTitle(officers)
     for i = 1, #officers do
@@ -46,37 +46,29 @@ local function closeMdt(hideUi)
     end
 end
 
-AddEventHandler(framework.loadedEvent, function()
-    player = framework.getOfficerData()
-end)
-
-AddEventHandler(framework.logoutEvent, function()
+AddEventHandler('qbx_core:client:playerLoggedOut', function()
     hasLoadedUi = false
 
-    if player.group then closeMdt(true) end
+    if QBX.PlayerData.job.type == 'leo'then
+        closeMdt(true)
+    end
 end)
 
-AddEventHandler(framework.setGroupEvent, function()
-    local lastGroup = player.group
-
+AddEventHandler('QBCore:Client:OnJobUpdate', function()
     framework.getOfficerData()
 
-    if not player.group and lastGroup or (lastGroup and lastGroup ~= player.group) then
+    if QBX.PlayerData.job.type ~= 'leo'then
         closeMdt(true)
     end
 end)
 
 local function openMDT()
-    ---@type boolean?, string?
-    local isAuthorised, callSign = lib.callback.await('ox_mdt:openMDT', 500)
-
-    if not isAuthorised then return end
+    if QBX.PlayerData.job.type ~= 'leo'then return end
 
     isMdtOpen = true
 
     if not IsEntityPlayingAnim(cache.ped, tabletAnimDict, 'base', 3) then
-        lib.requestAnimDict(tabletAnimDict)
-        TaskPlayAnim(cache.ped, tabletAnimDict, 'base', 6.0, 3.0, -1, 49, 1.0, false, false, false)
+        lib.playAnim(cache.ped, tabletAnimDict, 'base', 6.0, 3.0, -1, 49, 0.0, false, 0, false)
     end
 
     if not tablet then
@@ -87,6 +79,7 @@ local function openMDT()
         local coords = GetEntityCoords(cache.ped)
         tablet = CreateObject(model, coords.x, coords.y, coords.z, true, true, true)
         AttachEntityToEntity(tablet, cache.ped, GetPedBoneIndex(cache.ped, 28422), 0.0, 0.0, 0.03, 0.0, 0.0, 0.0, true, true, false, true, 0, true)
+        SetModelAsNoLongerNeeded(model)
     end
 
     if not hasLoadedUi then
@@ -107,9 +100,16 @@ local function openMDT()
         hasLoadedUi = true
     end
 
-    player.unit = LocalPlayer.state.mdtUnitId
-    player.callSign = callSign
-    player.group = framework.getGroupInfo()
+    local player = {
+        stateId = QBX.PlayerData.citizenid,
+        firstName = QBX.PlayerData.charinfo.firstname,
+        lastName = QBX.PlayerData.charinfo.lastname,
+        group = QBX.PlayerData.job.name,
+        grade = QBX.PlayerData.job.grade.level,
+        title = QBX.PlayerData.job.grade.name,
+        callSign = QBX.PlayerData.metadata.callsign,
+        unit = LocalPlayer.state.mdtUnitId,
+    }
 
     SendNUIMessage({
         action = 'setVisible',
@@ -118,8 +118,7 @@ local function openMDT()
 
     SetNuiFocus(true, true)
 end
-
-exports('openMDT', openMDT)
+exports('OpenMDT', openMDT)
 
 lib.addKeybind({
     defaultKey = 'm',
@@ -162,7 +161,9 @@ lib.addKeybind({
 })
 
 AddEventHandler('onResourceStop', function(resource)
-    if resource == cache.resource then closeMdt() end
+    if resource ~= cache.resource then return end
+
+    closeMdt()
 end)
 
 RegisterNuiCallback('hideMDT', function(_, cb)
@@ -177,8 +178,8 @@ RegisterNuiCallback('getDepartmentsData', function(_, cb)
     for i = 1, #config.policeGroups do
         local name = config.policeGroups[i]
         groups[name] = {
-            label = framework.getGroupLabel(name),
-            ranks = framework.getGroupGrades(name)
+            label = JOBS[name].label,
+            ranks = JOBS[name].grades
         }
     end
 

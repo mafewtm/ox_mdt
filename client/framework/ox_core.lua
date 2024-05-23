@@ -41,15 +41,13 @@ function ox.getGroupTitle(officer)
 end
 
 function ox.getOfficerData()
-    if player then
-        local group, grade, title = ox.getGroupInfo()
-        localOfficer.stateId = player.stateId
-        localOfficer.firstName = player.firstName
-        localOfficer.lastName = player.lastName
-        localOfficer.group = group
-        localOfficer.title = title
-        localOfficer.grade = grade
-    end
+    localOfficer.stateId = QBX.PlayerData.citizenid
+    localOfficer.firstName = QBX.PlayerData.charinfo.firstname
+    localOfficer.lastName = QBX.PlayerData.charinfo.lastname
+    localOfficer.group = QBX.PlayerData.job.name
+    localOfficer.title = QBX.PlayerData.job.grade.name
+    localOfficer.grade = QBX.PlayerData.job.grade.level
+
 
     return localOfficer
 end

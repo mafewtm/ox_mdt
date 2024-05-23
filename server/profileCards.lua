@@ -1,6 +1,7 @@
 local registerCallback = require 'server.utils.registerCallback'
 local config = require 'config'
 local framework = require(('server.framework.%s'):format(config.framework))
+local VEHICLES = exports.qbx_core:GetVehiclesByName()
 
 ---@class CustomProfileCard
 ---@field id string
@@ -43,11 +44,28 @@ local function createProfileCard(data)
         customProfileCards[#customProfileCards+1] = data
      end
 end
-
 exports('createProfileCard', createProfileCard)
 
 local function getAll()
     return customProfileCards
+end
+
+---@param citizenId string
+local function getLicenses(citizenId)
+    local player = exports.qbx_core:GetPlayerByCitizenId(citizenId) or exports.qbx_core:GetOfflinePlayer(citizenId)
+
+    return player.PlayerData.metadata.licenses or {}
+end
+
+---@param citizenId string
+local function getVehicles(citizenId)
+    local vehicles = MySQL.rawExecute.await('SELECT `plate`, `vehicle` from `player_vehicles` WHERE `citizenid` = ?', citizenId) or {}
+
+    for _, v in pairs(vehicles) do
+        v.label = ('%s %s'):format(VEHICLES[v.vehicle].brand, VEHICLES[v.vehicle].name) or v.vehicle
+    end
+
+    return vehicles
 end
 
 createProfileCard({
@@ -56,7 +74,7 @@ createProfileCard({
         title = locale('licenses'),
         icon = 'certificate',
         getData = function(profile)
-            local licenses = framework.getLicenses({profile.charid})
+            local licenses = getLicenses(profile.charid)
             local licenseLabels = {}
 
             for i = 1, #licenses do
@@ -71,11 +89,11 @@ createProfileCard({
         title = locale('vehicles'),
         icon = 'car',
         getData = function(profile)
-            local vehicles = framework.getVehicles({profile.charid})
+            local vehicles = getVehicles(profile.charid)
             local vehicleLabels = {}
 
             for i = 1, #vehicles do
-                vehicleLabels[#vehicleLabels+1] = vehicles[i].label .. ' (' ..vehicles[i].plate.. ')'
+                vehicleLabels[#vehicleLabels + 1] = ('%s (%s)'):format(vehicles[i].label, vehicles[i].plate)
             end
 
             return vehicleLabels
@@ -86,7 +104,7 @@ createProfileCard({
         title = locale("past_charges"),
         icon = 'gavel',
         getData = function(profile)
-            local charges = MySQL.rawExecute.await('SELECT `charge` AS label, SUM(`count`) AS count FROM `ox_mdt_reports_charges` WHERE `charge` IS NOT NULL AND `stateId` = ? GROUP BY `charge`', {profile.stateId}) or {}
+            local charges = MySQL.rawExecute.await('SELECT `charge` AS LABEL, SUM(`count`) AS count FROM `ox_mdt_reports_charges` WHERE `charge` IS NOT NULL AND `stateId` = ? GROUP BY `charge`', { profile.stateId }) or {}
             local chargeLabels = {}
 
             for i = 1, #charges do
