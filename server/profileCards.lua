@@ -106,11 +106,11 @@ createProfileCard({
         title = locale("past_charges"),
         icon = 'gavel',
         getData = function(profile)
-            local charges = MySQL.rawExecute.await('SELECT `charge` AS LABEL, SUM(`count`) AS count FROM `ox_mdt_reports_charges` WHERE `charge` IS NOT NULL AND `stateId` = ? GROUP BY `charge`', { profile.stateId }) or {}
+            local charges = MySQL.rawExecute.await('SELECT `charge` AS label, SUM(`count`) AS count FROM `ox_mdt_reports_charges` WHERE `charge` IS NOT NULL AND `stateId` = ? GROUP BY `charge`', { profile.stateId }) or {}
             local chargeLabels = {}
 
             for i = 1, #charges do
-                chargeLabels[#chargeLabels+1] = charges[i].count ..'x ' ..  charges[i].label
+                chargeLabels[#chargeLabels + 1] = charges[i].count ..'x ' ..  charges[i].label
             end
 
             return chargeLabels
