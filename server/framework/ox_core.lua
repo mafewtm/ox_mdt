@@ -261,7 +261,7 @@ end
 
 local selectProfiles = [[
     SELECT
-        players.citizenid,
+        players.citizenid AS stateId,
         JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
         JSON_VALUE(players.charinfo, '$.lastname') AS lastName,
         JSON_VALUE(players.charinfo, '$.birthdate') AS dob,
