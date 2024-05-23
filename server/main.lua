@@ -33,7 +33,7 @@ end, 'create_announcement')
 ---@param data { announcement: Announcement, value: string }
 registerCallback('ox_mdt:editAnnouncement', function(source, data)
     local officer = officers.get(source)
-    local announcement = db.selectAnnouncement(data.id)
+    local announcement = db.selectAnnouncement(data.announcement.id)
 
     if not officer then return end
 
