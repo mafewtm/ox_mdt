@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS `ox_mdt_warrants` (
 CREATE TABLE IF NOT EXISTS `ox_mdt_profiles` (
     `id` INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `stateid` VARCHAR(50) NOT NULL COLLATE utf8mb4_unicode_ci,
-    `image` VARCHAR(90) NULL,
+    `image` VARCHAR(300) NULL,
     `notes` TEXT NULL,
     `callsign` VARCHAR(10) NULL,
     CONSTRAINT `ox_mdt_profiles_pk` UNIQUE (`callsign`),
