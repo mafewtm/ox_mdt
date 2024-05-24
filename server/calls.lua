@@ -3,14 +3,14 @@ local activeCalls = {}
 
 ---@type Calls
 local completedCalls = {}
-
-local callId = 0
 local registerCallback = require 'server.utils.registerCallback'
 local units = require 'server.units'
 local officers = require 'server.officers'
 
 ---@param data CallData
 function createCall(data)
+    local callId = 0
+
     activeCalls[callId] = {
         id = callId,
         code = data.code,
@@ -106,7 +106,7 @@ end)
 
 ---@param source number
 ---@param id number
-registerCallback('ox_mdt:completeCall', function(source, id)
+registerCallback('ox_mdt:completeCall', function(_, id)
     if not activeCalls[id] then return end
 
     activeCalls[id].completed = os.time()
@@ -121,7 +121,7 @@ end, 'mark_call_completed')
 registerCallback('ox_mdt:setCallUnits', function(source, data)
     local officer = officers.get(source)
 
-    if not officer.group == 'dispatch' then return end
+    if officer.group ~= 'dispatch' then return end
 
     activeCalls[data.id].units = {}
     for i = 1, #data.units do

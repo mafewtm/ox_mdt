@@ -136,28 +136,6 @@ function ox.isAuthorised(playerId, permission, permissionName)
     return true
 end
 
----@return { label: string, plate: string }[]
-function ox.getVehicles(parameters)
-    local vehicles = MySQL.rawExecute.await('SELECT `plate`, `model` FROM `vehicles` WHERE `owner` = ?', parameters) or
-        {}
-
-    for _, v in pairs(vehicles) do
-        v.label = Ox.GetVehicleData(v.model)?.name or v.model
-        v.model = nil
-    end
-
-    return vehicles
-end
-
----@return table<string, { label: string } | string>[]
-function ox.getLicenses(parameters)
-    local licenses = MySQL.rawExecute.await(
-        'SELECT ox_licenses.label, `issued` FROM character_licenses LEFT JOIN ox_licenses ON ox_licenses.name = character_licenses.name WHERE `charid` = ?',
-        parameters) or {}
-
-    return licenses
-end
-
 local selectCharacters = [[
     SELECT
         JSON_VALUE(players.charinfo, '$.firstname') AS firstName,
@@ -447,10 +425,9 @@ function ox.getBOLOs(parameters)
     ]], parameters)
 end
 
----@param source number
 ---@param data {stateId: string, group: string, grade: number}
-registerCallback('ox_mdt:setOfficerRank', function(source, data)
-    local player = Ox.GetPlayerByFilter({stateId = data.stateId})
+registerCallback('ox_mdt:setOfficerRank', function(_, data)
+    local player = exports.qbx_core:GetPlayerByCitizenId(data.stateId) or exports.qbx_core:GetOfflinePlayer(data.stateId)
 
     print(data.group)
     print(data.grade + 1)
@@ -490,10 +467,9 @@ registerCallback('ox_mdt:setOfficerRank', function(source, data)
     return true
 end, 'set_officer_rank')
 
----@param source number
 ---@param stateId number
-registerCallback('ox_mdt:fireOfficer', function(source, stateId)
-    local player = Ox.GetPlayerByFilter({stateId = stateId})
+registerCallback('ox_mdt:fireOfficer', function(_, stateId)
+    local player = exports.qbx_core:GetPlayerByCitizenId(stateId) or exports.qbx_core:GetOfflinePlayer(stateId)
 
     if player then
         for i = 1, #config.policeGroups do
@@ -511,10 +487,9 @@ registerCallback('ox_mdt:fireOfficer', function(source, stateId)
     return true
 end, 'fire_officer')
 
----@param source number
 ---@param stateId string
-registerCallback('ox_mdt:hireOfficer', function(source, stateId)
-    local player = Ox.GetPlayerByFilter({stateId = stateId})
+registerCallback('ox_mdt:hireOfficer', function(_, stateId)
+    local player = exports.qbx_core:GetPlayerByCitizenId(stateId) or exports.qbx_core:GetOfflinePlayer(stateId)
 
     if player then
         if player.hasGroup(config.policeGroups) then return false end

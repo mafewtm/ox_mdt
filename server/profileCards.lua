@@ -1,6 +1,5 @@
 local registerCallback = require 'server.utils.registerCallback'
 local config = require 'config'
-local framework = require(('server.framework.%s'):format(config.framework))
 local VEHICLES = exports.qbx_core:GetVehiclesByName()
 
 ---@class CustomProfileCard
