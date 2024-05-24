@@ -200,9 +200,7 @@ local selectOfficers = [[
         player_groups.group IN ("police", "dispatch")
 ]]
 
-local selectOfficersFilter = selectOfficers .. ' AND MATCH (characters.stateId, `firstName`, `lastName`) AGAINST (? IN BOOLEAN MODE)'
 local selectOfficersPaginate = selectOfficers .. 'LIMIT 9 OFFSET ?'
-local selectOfficersFilterPaginate = selectOfficersFilter .. ' LIMIT 9 OFFSET ?'
 local selectOfficersCount = selectOfficers:gsub('SELECT.-FROM', 'SELECT COUNT(*) FROM')
 
 ---@param parameters? string[]
@@ -215,7 +213,7 @@ end
 
 ---@param source number
 ---@param data {page: number, search: string}
-registerCallback('ox_mdt:fetchRoster', function(source, data)
+registerCallback('ox_mdt:fetchRoster', function(_, data)
     if data.search == '' then
         return {
             totalRecords = MySQL.prepare.await(selectOfficersCount),
@@ -224,7 +222,7 @@ registerCallback('ox_mdt:fetchRoster', function(source, data)
     end
 
     return dbSearch(function(parameters, filter)
-        local response = MySQL.rawExecute.await(filter and selectOfficersFilterPaginate or selectOfficersPaginate, parameters)
+        local response = MySQL.rawExecute.await(filter and selectOfficersPaginate, parameters)
 
         return {
             totalRecords = #response,
@@ -453,6 +451,9 @@ end
 ---@param data {stateId: string, group: string, grade: number}
 registerCallback('ox_mdt:setOfficerRank', function(source, data)
     local player = Ox.GetPlayerByFilter({stateId = data.stateId})
+
+    print(data.group)
+    print(data.grade + 1)
 
     if player then
         for i = 1, #config.policeGroups do

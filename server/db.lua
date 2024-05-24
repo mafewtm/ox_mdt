@@ -286,7 +286,7 @@ function db.updateBOLO(id, contents, images)
     local queries = {
         { 'DELETE FROM `ox_mdt_bolos_images` where `boloId` = ? ', { id } },
     }
-    
+
     local queryN = #queries
 
     for i = 1, #images do

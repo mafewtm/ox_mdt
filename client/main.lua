@@ -6,10 +6,14 @@ local config = require 'config'
 local framework = require(('client.framework.%s'):format(config.framework))
 local JOBS = exports.qbx_core:GetJobs()
 
+---@param officers table
+---@return table
 local function getOfficersWithTitle(officers)
     for i = 1, #officers do
-        ---@todo send group name
-        officers[i].title = framework.getGroupTitle(officers[i])
+        local job = JOBS[officers[i].group]
+        local grade = JOBS[officers[i].group].grades[officers[i].grade]
+
+        officers[i].title = ('%s %s'):format(job.label, grade.name)
     end
 
     return officers
@@ -172,15 +176,13 @@ RegisterNuiCallback('hideMDT', function(_, cb)
     closeMdt()
 end)
 
+
 RegisterNuiCallback('getDepartmentsData', function(_, cb)
     local groups = {}
 
-    for i = 1, #config.policeGroups do
-        local name = config.policeGroups[i]
-        groups[name] = {
-            label = JOBS[name].label,
-            ranks = JOBS[name].grades
-        }
+    for k, v in pairs(JOBS) do
+        if v.type == 'leo' then
+            groups[k] = {
     end
 
     cb(groups)
