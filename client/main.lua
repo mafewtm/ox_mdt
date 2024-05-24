@@ -2,8 +2,6 @@ if not lib then return end
 
 local hasLoadedUi = false
 local isMdtOpen = false
-local config = require 'config'
-local framework = require(('client.framework.%s'):format(config.framework))
 local JOBS = exports.qbx_core:GetJobs()
 
 ---@param officers table
@@ -59,8 +57,6 @@ AddEventHandler('qbx_core:client:playerLoggedOut', function()
 end)
 
 AddEventHandler('QBCore:Client:OnJobUpdate', function()
-    framework.getOfficerData()
-
     if QBX.PlayerData.job.type ~= 'leo'then
         closeMdt(true)
     end
@@ -176,6 +172,17 @@ RegisterNuiCallback('hideMDT', function(_, cb)
     closeMdt()
 end)
 
+---@param name string
+---@return string[]
+local function getGroupGrades(name)
+    local grades = {}
+
+    for _, v in pairs(JOBS[name].grades) do
+        grades[#grades + 1] = v.name
+    end
+
+    return grades
+end
 
 RegisterNuiCallback('getDepartmentsData', function(_, cb)
     local groups = {}
@@ -183,6 +190,10 @@ RegisterNuiCallback('getDepartmentsData', function(_, cb)
     for k, v in pairs(JOBS) do
         if v.type == 'leo' then
             groups[k] = {
+                label = v.label,
+                ranks = getGroupGrades(k)
+            }
+        end
     end
 
     cb(groups)
@@ -339,7 +350,7 @@ RegisterNetEvent('ox_mdt:updateOfficerPositions', function(data)
     for i = 1, #data do
         local officer = data[i]
 
-        if officer.stateId ~= player.stateid then
+        if officer.stateId ~= QBX.PlayerData.citizenid then
             local blip = blips[officer.stateId]
 
             if not blip then
