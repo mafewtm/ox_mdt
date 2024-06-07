@@ -8,7 +8,7 @@ local units = require 'server.units'
 local officers = require 'server.officers'
 
 ---@param data CallData
-function createCall(data)
+local function createCall(data)
     local callId = 0
 
     activeCalls[callId] = {
@@ -30,20 +30,18 @@ function createCall(data)
 
     return callId - 1
 end
-
-exports('createCall', createCall)
+exports('CreateCall', createCall)
 
 ---@param callId number
 ---@param coords table
-function updateCallCoords(callId, coords)
+local function updateCallCoords(callId, coords)
     if not activeCalls[callId] then return end
 
     activeCalls[callId].coords = coords
 
     officers.triggerEvent('ox_mdt:updateCallCoords', { id = callId, coords = coords })
 end
-
-exports('updateCallCoords', updateCallCoords)
+exports('UpdateCallCoords', updateCallCoords)
 
 --Citizen.SetTimeout(7500, function()
 --    local coords = GetEntityCoords(GetPlayerPed(1))
@@ -67,9 +65,8 @@ exports('updateCallCoords', updateCallCoords)
 --    -- end, 1500)
 --end)
 
----@param source number
 ---@param data 'active' | 'completed'
-registerCallback('ox_mdt:getCalls', function(source, data)
+registerCallback('ox_mdt:getCalls', function(_, data)
     return data == 'active' and activeCalls or completedCalls
 end)
 
@@ -104,7 +101,6 @@ registerCallback('ox_mdt:detachFromCall', function(source, id)
     return true
 end)
 
----@param source number
 ---@param id number
 registerCallback('ox_mdt:completeCall', function(_, id)
     if not activeCalls[id] then return end
@@ -124,6 +120,7 @@ registerCallback('ox_mdt:setCallUnits', function(source, data)
     if officer.group ~= 'dispatch' then return end
 
     activeCalls[data.id].units = {}
+
     for i = 1, #data.units do
         local unitId = data.units[i]
         activeCalls[data.id].units[unitId] = units.getUnit(tostring(unitId))
@@ -141,4 +138,20 @@ lib.cron.new('0 */1 * * *', function()
             completedCalls[id] = nil
         end
     end
+end)
+
+lib.addCommand('testcall', {
+    help = 'Test call',
+    restricted = 'group.admin',
+}, function(source)
+    createCall({
+        code = '10-99',
+        offense = 'Officer Down',
+        coords = GetEntityCoords(GetPlayerPed(source)),
+        blip = 111,
+        isEmergency = true,
+        info = {
+            { plate = 'URMOM', veyhicle = 'Sultan RS' },
+        }
+    })
 end)
